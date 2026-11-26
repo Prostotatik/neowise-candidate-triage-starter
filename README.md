@@ -12,6 +12,31 @@ node server.mjs
 
 Откройте http://127.0.0.1:3000. Порт можно задать через переменную `PORT`.
 
+## Тесты
+
+Тесты используют встроенный `node:test`, зависимости не нужны:
+
+```sh
+npm test
+```
+
+То же без npm: `node --test test/triage-api.test.mjs test/triage-view.test.mjs`.
+
+- `test/triage-api.test.mjs` поднимает сервер на свободном порту и проверяет `POST /api/triage`: битый и пустой ввод даёт 400, корректный ответ даёт `ready`, а таймаут (быстрее 300 мс + запас), ошибка модели, не-JSON, чужая тема и пустой черновик дают `manual_review`.
+- `test/triage-view.test.mjs` проверяет страницу: после сбоя прошлый черновик стирается и показывается сообщение о ручном разборе.
+
+Проверка вручную через curl:
+
+```sh
+curl -s -X POST http://127.0.0.1:3000/api/triage -H "Content-Type: application/json" -d '{"text":"Где доставка? [timeout]"}'
+```
+
+## Устройство
+
+- `server.mjs` запускает сервер, `app.mjs` обрабатывает запросы. Проверка ввода находится в `parseTriageRequest`, проверка ответа AI в `parseModelOutput`, лимит 300 мс в `callModel`.
+- `triage-view.mjs` отрисовывает результат на странице. Его использует и `index.html`, и тесты.
+- Спецификация поведения лежит в `openspec/specs/candidate-triage/spec.md`.
+
 ## Что изменить
 
 1. Доработайте `POST /api/triage`. Принимайте JSON с полем `text`, содержащим непустую строку. При пустом, отсутствующем, нестроковом вводе или битом JSON верните HTTP 400 и `{"status":"invalid_input"}`.
